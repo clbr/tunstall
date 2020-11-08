@@ -277,19 +277,23 @@ int main(int argc, char **argv) {
 	}
 
 	// Finally, calculate compressed size
+	u8 * const compressed = (u8 *) calloc(1, len);
+	u8 * const testbuf = (u8 *) calloc(1, len);
+	u8 *out = compressed;
 	u32 compsize = 0;
 	for (i = 0; i < len;) {
 		for (k = 0; k < numentries; k++) {
-			if (i + entries[k].data.size() >= len)
+			if (i + entries[k].data.size() > len)
 				continue;
 			if (!memcmp(&mem[i], &entries[k].data[0], entries[k].data.size())) {
 				compsize++;
+				*out++ = k;
 				i += entries[k].data.size();
 				goto next;
 			}
 		}
 
-		printf("Not found at %u\n", i);
+		printf("Not found at %u, val %u\n", i, mem[i]);
 		abort();
 
 		next:;
@@ -297,6 +301,29 @@ int main(int argc, char **argv) {
 	if (i != len)
 		abort();
 
+	printf("Compressed stream size %u\n", compsize);
+
+	// Attempt decompression to check it
+	u8 *in = compressed;
+	out = testbuf;
+
+	while (out - testbuf < len) {
+		const u8 i = *in++;
+		const u16 dlen = entries[i].data.size();
+		memcpy(out, &entries[i].data[0], dlen);
+		out += dlen;
+	}
+
+	if (out != testbuf + len)
+		abort();
+
+	if (!memcmp(mem, testbuf, len))
+		puts("Decompression ok");
+	else
+		puts("FAIL");
+
+	free(testbuf);
+	free(compressed);
 	free(mem);
 	free(memmap);
 	return 0;
