@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
 
 	u32 k;
 	for (i = 0; i < numentries; i++) {
-		printf("Entry %u: len %lu\n\t", i, entries[i].data.size());
+		printf("Entry %u: len %lu: ", i, entries[i].data.size());
 		for (k = 0; k < entries[i].data.size(); k++)
 			printf("%u,", entries[i].data[k]);
 		puts("");
