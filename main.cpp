@@ -210,6 +210,9 @@ int main(int argc, char **argv) {
 		}
 		printf("Best amount was %u, at %u\n", bestamount, best);
 
+		if (!best) // Found nothing
+			break;
+
 		// Found a new best
 		for (it = stuff[best].begin(); it != stuff[best].end(); it++) {
 			if (it->second != maxes[best])
