@@ -25,7 +25,9 @@ public:
 	void add(const u16 addr, const u8 len) {
 		u16 i;
 		const u16 curmax = num[len - 2];
-		for (i = 0; i < curmax; i++) {
+		const u8 hashed = hash(addr);
+
+		for (i = hashmap[len - 2][hashed]; i < curmax; i++) {
 			if (!memcmp(&mem[addr], &mem[entries[len - 2][i].addr], len)) {
 				// Found it, just add one
 				entries[len - 2][i].num++;
@@ -36,6 +38,9 @@ public:
 		// Didn't find it, add a new one, clearing it first
 		entries[len - 2][curmax].addr = addr;
 		entries[len - 2][curmax].num = 1;
+
+		if (hashmap[len - 2][hashed] == USHRT_MAX)
+			hashmap[len - 2][hashed] = curmax;
 
 		num[len - 2]++;
 	}
@@ -62,6 +67,7 @@ public:
 
 	void clear() {
 		memset(num, 0, sizeof(num));
+		memset(hashmap, 0xff, sizeof(hashmap));
 	}
 
 private:
@@ -74,6 +80,19 @@ private:
 
 	entry entries[128 - 2][MAXSIZE];
 	u16 num[128 - 2];
+
+	u16 hashmap[128 - 2][64]; // points to first matching entry, if any
+
+	u8 hash(const u16 addr) const {
+		u8 a, b;
+		a = mem[addr];
+		b = mem[addr + 1];
+
+		// rotate
+		b = (b >> 4) | (b << 4);
+
+		return (a ^ b) & 63;
+	}
 };
 
 struct entry {
