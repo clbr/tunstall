@@ -44,7 +44,7 @@ public:
 		return num[len - 2];
 	}
 
-	const u8 *best(const u8 len) const {
+	const u8 *best(const u8 len, u16 &outbestnum) const {
 		u16 i;
 		const u16 curmax = num[len - 2];
 		u16 bestnum = 0, best = 0;
@@ -54,6 +54,8 @@ public:
 				best = i;
 			}
 		}
+
+		outbestnum = bestnum;
 
 		return &mem[entries[len - 2][best].addr];
 	}
@@ -114,7 +116,7 @@ int main(int argc, char **argv) {
 	printf("Read %u bytes\n\n", len);
 
 	// Analyze
-	map<vector<u8>, u32> stuff[129];
+	piecer *pc = new piecer(mem);
 	u32 maxes[129];
 	u8 lastlevel = 128;
 
@@ -139,33 +141,16 @@ int main(int argc, char **argv) {
 
 	for (i = 2; i <= 128; i++) {
 		u32 p;
-		u32 max = 0;
 		for (p = 0; p < len; p++) {
 			if (p + i >= len)
 				break;
-			vector<u8> vec;
-			u8 k;
-			for (k = 0; k < i; k++)
-				vec.push_back(mem[p + k]);
-
-			const u32 one = ++stuff[i][vec];
-			if (one > max)
-				max = one;
+			pc->add(p, i);
 		}
 
-		printf("Length %u had %lu unique matches\n", i, stuff[i].size());
+		printf("Length %u had %u unique matches\n", i, pc->size(i));
 
-/*		u32 max = 0;
-		const map<vector<u8>, u32> &cur = stuff[i];
-		const u32 num = cur.size();
-		for (p = 0; p < num; p++) {
-			map<vector<u8>, u32>::const_iterator it;
-			for (it = cur.begin(); it != cur.end(); it++) {
-				if (it->second > max)
-					max = it->second;
-			}
-		}*/
-
+		u16 max = 0;
+		pc->best(i, max);
 		printf("Largest amount was %u\n", max);
 		maxes[i] = max;
 
@@ -192,21 +177,16 @@ int main(int argc, char **argv) {
 
 	u32 numentries = used + 1;
 
-	map<vector<u8>, u32>::const_iterator it;
-	for (it = stuff[best].begin(); it != stuff[best].end(); it++) {
-		if (it->second != maxes[best])
-			continue;
+	u16 unused;
+	const u8 *ptr = pc->best(best, unused);
+	memcpy(entries[used].data, ptr, best);
+	entries[used].len = best;
 
-		memcpy(entries[used].data, &(it->first[0]), it->first.size());
-		entries[used].len = it->first.size();
-
-		printf("Contents: ");
-		for (i = 0; i < it->first.size(); i++) {
-			printf("%u,", it->first[i]);
-		}
-		puts("");
-		break;
+	printf("Contents: ");
+	for (i = 0; i < best; i++) {
+		printf("%u,", ptr[i]);
 	}
+	puts("");
 
 	// Erase them from the memmap
 	u8 * const memmap = (u8 *) calloc(1, len);
@@ -229,8 +209,7 @@ int main(int argc, char **argv) {
 
 		for (i = 2; i <= lastlevel; i++) {
 			u32 p;
-			u32 max = 0;
-			stuff[i].clear();
+			pc->clear();
 			for (p = 0; p < len; p++) {
 				if (p + i >= len)
 					break;
@@ -242,17 +221,12 @@ int main(int argc, char **argv) {
 					continue;
 				}
 
-				vector<u8> vec;
-				u8 k;
-				for (k = 0; k < i; k++)
-					vec.push_back(mem[p + k]);
-
-				const u32 one = ++stuff[i][vec];
-				if (one > max)
-					max = one;
+				pc->add(p, i);
 			}
-			printf("Length %u had %lu unique matches, max %u\n", i,
-				stuff[i].size(), max);
+			u16 max = 0;
+			pc->best(i, max);
+			printf("Length %u had %u unique matches, max %u\n", i,
+				pc->size(i), max);
 
 			maxes[i] = max;
 
@@ -281,21 +255,16 @@ int main(int argc, char **argv) {
 			break;
 
 		// Found a new best
-		for (it = stuff[best].begin(); it != stuff[best].end(); it++) {
-			if (it->second != maxes[best])
-				continue;
+		ptr = pc->best(best, unused);
+		memcpy(entries[numentries].data, ptr, best);
+		entries[numentries].len = best;
+		numentries++;
 
-			memcpy(entries[numentries].data, &(it->first[0]), it->first.size());
-			entries[numentries].len = it->first.size();
-			numentries++;
-
-			printf("Contents: ");
-			for (i = 0; i < it->first.size(); i++) {
-				printf("%u,", it->first[i]);
-			}
-			puts("");
-			break;
+		printf("Contents: ");
+		for (i = 0; i < best; i++) {
+			printf("%u,", ptr[i]);
 		}
+		puts("");
 
 		// Erase from map
 		for (i = 0; i < len - best; i++) {
