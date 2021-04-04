@@ -430,6 +430,42 @@ int main(int argc, char **argv) {
 		abort();
 	}
 
+	// Output optionally
+	if (argc == 3) {
+		printf("\nSaving compressed file to %s\n", argv[2]);
+		f = fopen(argv[2], "w");
+		if (!f) die("Can't open for writing");
+
+		// N entries
+		fwrite(&numentries, 1, 1, f);
+
+		// Their sizes, as pairs
+		k = 1;
+		for (i = 0; i < numentries; i++) {
+			if (i == numentries - 1 || entries[i + 1].len != entries[i].len) {
+				fwrite(&k, 1, 1, f);
+				fwrite(&entries[i].len, 1, 1, f);
+				k = 1;
+			} else {
+				k++;
+			}
+		}
+
+		// Dict
+		for (i = 0; i < numentries; i++) {
+			fwrite(entries[i].data, entries[i].len, 1, f);
+		}
+
+		// Stream
+		fwrite(compressed, compsize, 1, f);
+
+		const u32 wrote = ftell(f);
+
+		fclose(f);
+
+		printf("Wrote %u bytes, %.2f%%\n", wrote, wrote * 100.0f / len);
+	}
+
 	free(testbuf);
 	free(compressed);
 	free(mem);
