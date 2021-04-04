@@ -39,6 +39,9 @@ int main(int argc, char **argv) {
 	const u32 len = ftell(f);
 	rewind(f);
 
+	if (len > 32768)
+		die("Can't compress over 32k");
+
 	u8 * const mem = (u8 *) malloc(len);
 
 	if (fread(mem, len, 1, f) != 1)
