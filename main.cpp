@@ -423,10 +423,12 @@ int main(int argc, char **argv) {
 	if (out != testbuf + len)
 		abort();
 
-	if (!memcmp(mem, testbuf, len))
+	if (!memcmp(mem, testbuf, len)) {
 		puts("Decompression ok");
-	else
+	} else {
 		puts("FAIL");
+		abort();
+	}
 
 	free(testbuf);
 	free(compressed);
