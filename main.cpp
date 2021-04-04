@@ -31,10 +31,10 @@ public:
 			const u16 pos = hashmap[hashed][i];
 			if (!memcmp(&mem[addr], &mem[entries[len - 2][pos].addr], len)) {
 				// Found it, just add one
-				entries[len - 2][pos].num++;
+				entrynum[pos]++;
 
-				if (entries[len - 2][pos].num > largestnum[len - 2]) {
-					largestnum[len - 2] = entries[len - 2][pos].num;
+				if (entrynum[pos] > largestnum[len - 2]) {
+					largestnum[len - 2] = entrynum[pos];
 					largestpos[len - 2] = pos;
 				}
 				return;
@@ -43,7 +43,7 @@ public:
 
 		// Didn't find it, add a new one, clearing it first
 		entries[len - 2][curmax].addr = addr;
-		entries[len - 2][curmax].num = 1;
+		entrynum[curmax] = 1;
 
 		hashmap[hashed][hashnum[hashed]] = curmax;
 		hashnum[hashed]++;
@@ -92,6 +92,7 @@ public:
 		printf("%u/64 buckets used, min/max %u %u\n", used, smallnum, bignum);*/
 
 		memset(hashnum, 0, sizeof(hashnum));
+		memset(entrynum, 0, sizeof(entrynum));
 	}
 
 	void clear() {
@@ -107,7 +108,6 @@ private:
 
 	struct entry {
 		u16 addr;
-		u16 num;
 	};
 
 	entry entries[128 + 1 - 2][MAXSIZE];
@@ -115,7 +115,8 @@ private:
 
 	u16 largestpos[128 + 1 - 2], largestnum[128 + 1 - 2];
 
-	// Hashes are only used while adding, during one len
+	// Hashes and running numbers are only used while adding, during one len
+	u16 entrynum[MAXSIZE];
 	u16 hashmap[64][MAXSIZE];
 	u16 hashnum[64];
 
