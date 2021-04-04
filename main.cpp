@@ -142,6 +142,8 @@ static int lencmp(const void *ap, const void *bp) {
 
 int main(int argc, char **argv) {
 
+	const u8 verbose = 0;
+
 	if (argc < 2) die("Need file");
 
 	FILE *f = fopen(argv[1], "r");
@@ -185,7 +187,8 @@ int main(int argc, char **argv) {
 			used++;
 		}
 	}
-	printf("%u values used\n", used);
+	if (verbose)
+		printf("%u values used\n", used);
 
 	for (i = 2; i <= 128; i++) {
 		u32 p;
@@ -196,10 +199,12 @@ int main(int argc, char **argv) {
 		}
 		pc->clearhash();
 
-		printf("Length %u had %u unique matches\n", i, pc->size(i));
+		if (verbose)
+			printf("Length %u had %u unique matches\n", i, pc->size(i));
 
 		const u16 max = pc->bestnum(i);
-		printf("Largest amount was %u\n", max);
+		if (verbose)
+			printf("Largest amount was %u\n", max);
 		maxes[i] = max;
 
 		if (max == 1) {
@@ -208,7 +213,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	puts("");
+	if (verbose)
+		puts("");
 
 	u32 bestamount = 0;
 	u8 best = 0;
@@ -221,7 +227,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	printf("Best amount was %u, at %u\n", bestamount, best);
+	if (verbose)
+		printf("Best amount was %u, at %u\n", bestamount, best);
 
 	u32 numentries = used + 1;
 
@@ -229,11 +236,13 @@ int main(int argc, char **argv) {
 	memcpy(entries[used].data, ptr, best);
 	entries[used].len = best;
 
-	printf("Contents: ");
-	for (i = 0; i < best; i++) {
-		printf("%u,", ptr[i]);
+	if (verbose) {
+		printf("Contents: ");
+		for (i = 0; i < best; i++) {
+			printf("%u,", ptr[i]);
+		}
+		puts("");
 	}
-	puts("");
 
 	// Erase them from the memmap
 	u8 * const memmap = (u8 *) calloc(1, len);
@@ -249,8 +258,9 @@ int main(int argc, char **argv) {
 
 	// We have our first entry. Time to iterate
 	while (numentries < 256) {
-		printf("Iterating. %u entries found, %u/%u bytes\n",
-			numentries, erased, len);
+		if (verbose)
+			printf("Iterating. %u entries found, %u/%u bytes\n",
+				numentries, erased, len);
 
 		memset(maxes, 0, 129);
 		pc->clear();
@@ -273,8 +283,9 @@ int main(int argc, char **argv) {
 			pc->clearhash();
 
 			const u16 max = pc->bestnum(i);
-			printf("Length %u had %u unique matches, max %u\n", i,
-				pc->size(i), max);
+			if (verbose)
+				printf("Length %u had %u unique matches, max %u\n", i,
+					pc->size(i), max);
 
 			maxes[i] = max;
 
@@ -297,7 +308,8 @@ int main(int argc, char **argv) {
 				bestamount = mul;
 			}
 		}
-		printf("Best amount was %u, at %u\n", bestamount, best);
+		if (verbose)
+			printf("Best amount was %u, at %u\n", bestamount, best);
 
 		if (!best) // Found nothing
 			break;
@@ -308,11 +320,13 @@ int main(int argc, char **argv) {
 		entries[numentries].len = best;
 		numentries++;
 
-		printf("Contents: ");
-		for (i = 0; i < best; i++) {
-			printf("%u,", ptr[i]);
+		if (verbose) {
+			printf("Contents: ");
+			for (i = 0; i < best; i++) {
+				printf("%u,", ptr[i]);
+			}
+			puts("");
 		}
-		puts("");
 
 		// Erase from map
 		for (i = 0; i < len - best; i++) {
@@ -348,7 +362,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	puts("");
+	if (verbose)
+		puts("");
 
 	u32 dlen = 0;
 	for (i = 0; i < numentries; i++)
@@ -358,11 +373,13 @@ int main(int argc, char **argv) {
 	qsort(entries, numentries, sizeof(entry), lencmp);
 
 	u32 k;
-	for (i = 0; i < numentries; i++) {
-		printf("Entry %u: len %u: ", i, entries[i].len);
-		for (k = 0; k < entries[i].len; k++)
-			printf("%u,", entries[i].data[k]);
-		puts("");
+	if (verbose) {
+		for (i = 0; i < numentries; i++) {
+			printf("Entry %u: len %u: ", i, entries[i].len);
+			for (k = 0; k < entries[i].len; k++)
+				printf("%u,", entries[i].data[k]);
+			puts("");
+		}
 	}
 
 	// Finally, calculate compressed size
