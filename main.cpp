@@ -31,6 +31,11 @@ public:
 			if (!memcmp(&mem[addr], &mem[entries[len - 2][i].addr], len)) {
 				// Found it, just add one
 				entries[len - 2][i].num++;
+
+				if (entries[len - 2][i].num > largestnum[len - 2]) {
+					largestnum[len - 2] = entries[len - 2][i].num;
+					largestpos[len - 2] = i;
+				}
 				return;
 			}
 		}
@@ -42,6 +47,11 @@ public:
 		if (hashmap[len - 2][hashed] == USHRT_MAX)
 			hashmap[len - 2][hashed] = curmax;
 
+		if (!largestnum[len - 2]) {
+			largestnum[len - 2] = 1;
+			largestpos[len - 2] = curmax;
+		}
+
 		num[len - 2]++;
 	}
 
@@ -50,24 +60,16 @@ public:
 	}
 
 	const u8 *best(const u8 len, u16 &outbestnum) const {
-		u16 i;
-		const u16 curmax = num[len - 2];
-		u16 bestnum = 0, best = 0;
-		for (i = 0; i < curmax; i++) {
-			if (entries[len - 2][i].num > bestnum) {
-				bestnum = entries[len - 2][i].num;
-				best = i;
-			}
-		}
+		outbestnum = largestnum[len - 2];
 
-		outbestnum = bestnum;
-
-		return &mem[entries[len - 2][best].addr];
+		return &mem[entries[len - 2][largestpos[len - 2]].addr];
 	}
 
 	void clear() {
 		memset(num, 0, sizeof(num));
 		memset(hashmap, 0xff, sizeof(hashmap));
+		memset(largestpos, 0, sizeof(largestpos));
+		memset(largestnum, 0, sizeof(largestnum));
 	}
 
 private:
@@ -80,6 +82,8 @@ private:
 
 	entry entries[128 - 2][MAXSIZE];
 	u16 num[128 - 2];
+
+	u16 largestpos[128 - 2], largestnum[128 - 2];
 
 	u16 hashmap[128 - 2][64]; // points to first matching entry, if any
 
