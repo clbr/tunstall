@@ -117,10 +117,10 @@ private:
 	// Hashes and running numbers are only used while adding, during one len
 	u16 entrynum[MAXSIZE];
 	u16 hashnext[MAXSIZE];
-	u16 hashmap[64];
+	u16 hashmap[256];
 
 	u8 hash(const u16 addr, const u8 len) const {
-		return XXH3_64bits(&mem[addr], len) & 63;
+		return XXH3_64bits(&mem[addr], len);
 	}
 };
 
