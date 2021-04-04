@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <lrtypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +13,66 @@ static void die(const char why[]) {
 	printf("%s\n", why);
 	exit(1);
 }
+
+#define MAXSIZE 32768
+
+class piecer {
+public:
+	piecer(const u8 *mem_): mem(mem_) {
+		clear();
+	}
+
+	void add(const u16 addr, const u8 len) {
+		u16 i;
+		const u16 curmax = num[len - 2];
+		for (i = 0; i < curmax; i++) {
+			if (!memcmp(&mem[addr], &mem[entries[len - 2][i].addr], len)) {
+				// Found it, just add one
+				entries[len - 2][i].num++;
+				return;
+			}
+		}
+
+		// Didn't find it, add a new one, clearing it first
+		entries[len - 2][curmax].addr = addr;
+		entries[len - 2][curmax].num = 1;
+
+		num[len - 2]++;
+	}
+
+	u32 size(const u8 len) const {
+		return num[len - 2];
+	}
+
+	const u8 *best(const u8 len) const {
+		u16 i;
+		const u16 curmax = num[len - 2];
+		u16 bestnum = 0, best = 0;
+		for (i = 0; i < curmax; i++) {
+			if (entries[len - 2][i].num > bestnum) {
+				bestnum = entries[len - 2][i].num;
+				best = i;
+			}
+		}
+
+		return &mem[entries[len - 2][best].addr];
+	}
+
+	void clear() {
+		memset(num, 0, sizeof(num));
+	}
+
+private:
+	const u8 *mem;
+
+	struct entry {
+		u16 addr;
+		u16 num;
+	};
+
+	entry entries[128 - 2][MAXSIZE];
+	u16 num[128 - 2];
+};
 
 struct entry {
 	char data[128];
@@ -40,7 +101,7 @@ int main(int argc, char **argv) {
 	const u32 len = ftell(f);
 	rewind(f);
 
-	if (len > 32768)
+	if (len > MAXSIZE)
 		die("Can't compress over 32k");
 
 	u8 * const mem = (u8 *) malloc(len);
