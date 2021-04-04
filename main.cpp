@@ -63,6 +63,15 @@ public:
 	const u8 *best(const u8 len, u16 &outbestnum) const {
 		outbestnum = largestnum[len - 2];
 
+/*		u16 i, opts = 0;
+		const u16 curmax = num[len - 2];
+		for (i = 0; i < curmax; i++) {
+			if (entries[len - 2][i].num != outbestnum)
+				continue;
+			opts++;
+		}
+		if (opts > 1) printf("%u options\n", opts);*/
+
 		return &mem[entries[len - 2][largestpos[len - 2]].addr];
 	}
 
@@ -252,10 +261,10 @@ int main(int argc, char **argv) {
 			numentries, erased, len);
 
 		memset(maxes, 0, 129);
+		pc->clear();
 
 		for (i = 2; i <= lastlevel; i++) {
 			u32 p;
-			pc->clear();
 			for (p = 0; p < len; p++) {
 				if (p + i >= len)
 					break;
