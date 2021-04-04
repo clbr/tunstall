@@ -26,15 +26,16 @@ public:
 		u16 i;
 		const u16 curmax = num[len - 2];
 		const u8 hashed = hash(addr, len);
-
-		for (i = hashmap[hashed]; i < MAXSIZE; i = hashnext[i]) {
-			if (!memcmp(&mem[addr], &mem[entries[len - 2][i].addr], len)) {
+		const u16 hashmax = hashnum[hashed];
+		for (i = 0; i < hashmax; i++) {
+			const u16 pos = hashmap[hashed][i];
+			if (!memcmp(&mem[addr], &mem[entries[len - 2][pos].addr], len)) {
 				// Found it, just add one
-				entries[len - 2][i].num++;
+				entries[len - 2][pos].num++;
 
-				if (entries[len - 2][i].num > largestnum[len - 2]) {
-					largestnum[len - 2] = entries[len - 2][i].num;
-					largestpos[len - 2] = i;
+				if (entries[len - 2][pos].num > largestnum[len - 2]) {
+					largestnum[len - 2] = entries[len - 2][pos].num;
+					largestpos[len - 2] = pos;
 				}
 				return;
 			}
@@ -44,8 +45,8 @@ public:
 		entries[len - 2][curmax].addr = addr;
 		entries[len - 2][curmax].num = 1;
 
-		hashnext[curmax] = hashmap[hashed];
-		hashmap[hashed] = curmax;
+		hashmap[hashed][hashnum[hashed]] = curmax;
+		hashnum[hashed]++;
 
 		if (!largestnum[len - 2]) {
 			largestnum[len - 2] = 1;
@@ -75,8 +76,20 @@ public:
 	}
 
 	void clearhash() {
-		memset(hashmap, 0xff, sizeof(hashmap));
-		memset(hashnext, 0xff, sizeof(hashnext));
+/*		u16 i;
+		u16 used = 0, smallnum = 65535, bignum = 0;
+		for (i = 0; i < 64; i++) {
+			if (!hashnum[i])
+				continue;
+			used++;
+			if (hashnum[i] < smallnum)
+				smallnum = hashnum[i];
+			if (hashnum[i] > bignum)
+				bignum = hashnum[i];
+		}
+		printf("%u/64 buckets used, min/max %u %u\n", used, smallnum, bignum);*/
+
+		memset(hashnum, 0, sizeof(hashnum));
 	}
 
 	void clear() {
@@ -101,10 +114,18 @@ private:
 	u16 largestpos[128 + 1 - 2], largestnum[128 + 1 - 2];
 
 	// Hashes are only used while adding, during one len
-	u16 hashnext[MAXSIZE];
-	u16 hashmap[64];
+	u16 hashmap[64][MAXSIZE];
+	u16 hashnum[64];
 
 	u8 hash(const u16 addr, const u8 len) const {
+/*		u8 a, b;
+		a = mem[addr];
+		b = mem[addr + len - 1];
+		a ^= mem[addr + len / 2];
+		// rotate
+		b = (b >> 4) | (b << 4);
+
+		return (a ^ b) & 63;*/
 		return XXH3_64bits(&mem[addr], len) & 63;
 	}
 };
