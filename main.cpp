@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <map>
-#include <vector>
+#define XXH_INLINE_ALL
+#include "xxhash.h"
 
 using namespace std;
 
@@ -25,16 +25,17 @@ public:
 	void add(const u16 addr, const u8 len) {
 		u16 i;
 		const u16 curmax = num[len - 2];
-		const u8 hashed = hash(addr);
-
-		for (i = hashmap[len - 2][hashed]; i < curmax; i++) {
-			if (!memcmp(&mem[addr], &mem[entries[len - 2][i].addr], len)) {
+		const u8 hashed = hash(addr, len);
+		const u16 hashmax = hashnum[hashed];
+		for (i = 0; i < hashmax; i++) {
+			const u16 pos = hashmap[hashed][i];
+			if (!memcmp(&mem[addr], &mem[entries[len - 2][pos].addr], len)) {
 				// Found it, just add one
-				entries[len - 2][i].num++;
+				entries[len - 2][pos].num++;
 
-				if (entries[len - 2][i].num > largestnum[len - 2]) {
-					largestnum[len - 2] = entries[len - 2][i].num;
-					largestpos[len - 2] = i;
+				if (entries[len - 2][pos].num > largestnum[len - 2]) {
+					largestnum[len - 2] = entries[len - 2][pos].num;
+					largestpos[len - 2] = pos;
 				}
 				return;
 			}
@@ -44,8 +45,8 @@ public:
 		entries[len - 2][curmax].addr = addr;
 		entries[len - 2][curmax].num = 1;
 
-		if (hashmap[len - 2][hashed] == USHRT_MAX)
-			hashmap[len - 2][hashed] = curmax;
+		hashmap[hashed][hashnum[hashed]] = curmax;
+		hashnum[hashed]++;
 
 		if (!largestnum[len - 2]) {
 			largestnum[len - 2] = 1;
@@ -65,11 +66,29 @@ public:
 		return &mem[entries[len - 2][largestpos[len - 2]].addr];
 	}
 
+	void clearhash() {
+/*		u16 i;
+		u16 used = 0, smallnum = 65535, bignum = 0;
+		for (i = 0; i < 64; i++) {
+			if (!hashnum[i])
+				continue;
+			used++;
+			if (hashnum[i] < smallnum)
+				smallnum = hashnum[i];
+			if (hashnum[i] > bignum)
+				bignum = hashnum[i];
+		}
+		printf("%u/64 buckets used, min/max %u %u\n", used, smallnum, bignum);*/
+
+		memset(hashnum, 0, sizeof(hashnum));
+	}
+
 	void clear() {
 		memset(num, 0, sizeof(num));
-		memset(hashmap, 0xff, sizeof(hashmap));
 		memset(largestpos, 0, sizeof(largestpos));
 		memset(largestnum, 0, sizeof(largestnum));
+
+		clearhash();
 	}
 
 private:
@@ -80,22 +99,25 @@ private:
 		u16 num;
 	};
 
-	entry entries[128 - 2][MAXSIZE];
-	u16 num[128 - 2];
+	entry entries[128 + 1 - 2][MAXSIZE];
+	u16 num[128 + 1 - 2];
 
-	u16 largestpos[128 - 2], largestnum[128 - 2];
+	u16 largestpos[128 + 1 - 2], largestnum[128 + 1 - 2];
 
-	u16 hashmap[128 - 2][64]; // points to first matching entry, if any
+	// Hashes are only used while adding, during one len
+	u16 hashmap[64][MAXSIZE];
+	u16 hashnum[64];
 
-	u8 hash(const u16 addr) const {
-		u8 a, b;
+	u8 hash(const u16 addr, const u8 len) const {
+/*		u8 a, b;
 		a = mem[addr];
-		b = mem[addr + 1];
-
+		b = mem[addr + len - 1];
+		a ^= mem[addr + len / 2];
 		// rotate
 		b = (b >> 4) | (b << 4);
 
-		return (a ^ b) & 63;
+		return (a ^ b) & 63;*/
+		return XXH3_64bits(&mem[addr], len) & 63;
 	}
 };
 
@@ -169,6 +191,7 @@ int main(int argc, char **argv) {
 				break;
 			pc->add(p, i);
 		}
+		pc->clearhash();
 
 		printf("Length %u had %u unique matches\n", i, pc->size(i));
 
@@ -246,6 +269,8 @@ int main(int argc, char **argv) {
 
 				pc->add(p, i);
 			}
+			pc->clearhash();
+
 			u16 max = 0;
 			pc->best(i, max);
 			printf("Length %u had %u unique matches, max %u\n", i,
