@@ -26,16 +26,14 @@ public:
 		u16 i;
 		const u16 curmax = num[len - 2];
 		const u8 hashed = hash(addr, len);
-		const u16 hashmax = hashnum[hashed];
-		for (i = 0; i < hashmax; i++) {
-			const u16 pos = hashmap[hashed][i];
-			if (!memcmp(&mem[addr], &mem[entries[len - 2][pos].addr], len)) {
+		for (i = hashmap[hashed]; i < MAXSIZE; i = hashnext[i]) {
+			if (!memcmp(&mem[addr], &mem[entries[len - 2][i].addr], len)) {
 				// Found it, just add one
-				entrynum[pos]++;
+				entrynum[i]++;
 
-				if (entrynum[pos] > largestnum[len - 2]) {
-					largestnum[len - 2] = entrynum[pos];
-					largestpos[len - 2] = pos;
+				if (entrynum[i] > largestnum[len - 2]) {
+					largestnum[len - 2] = entrynum[i];
+					largestpos[len - 2] = i;
 				}
 				return;
 			}
@@ -45,8 +43,8 @@ public:
 		entries[len - 2][curmax].addr = addr;
 		entrynum[curmax] = 1;
 
-		hashmap[hashed][hashnum[hashed]] = curmax;
-		hashnum[hashed]++;
+		hashnext[curmax] = hashmap[hashed];
+		hashmap[hashed] = curmax;
 
 		if (!largestnum[len - 2]) {
 			largestnum[len - 2] = 1;
@@ -91,7 +89,8 @@ public:
 		}
 		printf("%u/64 buckets used, min/max %u %u\n", used, smallnum, bignum);*/
 
-		memset(hashnum, 0, sizeof(hashnum));
+		memset(hashmap, 0xff, sizeof(hashmap));
+		memset(hashnext, 0xff, sizeof(hashnext));
 		memset(entrynum, 0, sizeof(entrynum));
 	}
 
@@ -117,8 +116,8 @@ private:
 
 	// Hashes and running numbers are only used while adding, during one len
 	u16 entrynum[MAXSIZE];
-	u16 hashmap[64][MAXSIZE];
-	u16 hashnum[64];
+	u16 hashnext[MAXSIZE];
+	u16 hashmap[64];
 
 	u8 hash(const u16 addr, const u8 len) const {
 		return XXH3_64bits(&mem[addr], len) & 63;
