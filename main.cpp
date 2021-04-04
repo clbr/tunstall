@@ -121,14 +121,6 @@ private:
 	u16 hashnum[64];
 
 	u8 hash(const u16 addr, const u8 len) const {
-/*		u8 a, b;
-		a = mem[addr];
-		b = mem[addr + len - 1];
-		a ^= mem[addr + len / 2];
-		// rotate
-		b = (b >> 4) | (b << 4);
-
-		return (a ^ b) & 63;*/
 		return XXH3_64bits(&mem[addr], len) & 63;
 	}
 };
