@@ -14,16 +14,17 @@ static void die(const char why[]) {
 }
 
 struct entry {
-	vector<u8> data;
+	char data[128];
+	u8 len;
 };
 
 static int lencmp(const void *ap, const void *bp) {
 	const entry * const a = (entry *) ap;
 	const entry * const b = (entry *) bp;
 
-	if (a->data.size() > b->data.size())
+	if (a->len > b->len)
 		return -1;
-	if (a->data.size() < b->data.size())
+	if (a->len < b->len)
 		return 1;
 	return 0;
 }
@@ -68,7 +69,8 @@ int main(int argc, char **argv) {
 	u32 used = 0;
 	for (i = 0; i < 256; i++) {
 		if (bytes[i]) {
-			entries[used].data.push_back(i);
+			entries[used].data[0] = i;
+			entries[used].len = 1;
 			used++;
 		}
 	}
@@ -134,7 +136,8 @@ int main(int argc, char **argv) {
 		if (it->second != maxes[best])
 			continue;
 
-		entries[used].data = it->first;
+		memcpy(entries[used].data, &(it->first[0]), it->first.size());
+		entries[used].len = it->first.size();
 
 		printf("Contents: ");
 		for (i = 0; i < it->first.size(); i++) {
@@ -221,7 +224,9 @@ int main(int argc, char **argv) {
 			if (it->second != maxes[best])
 				continue;
 
-			entries[numentries++].data = it->first;
+			memcpy(entries[numentries].data, &(it->first[0]), it->first.size());
+			entries[numentries].len = it->first.size();
+			numentries++;
 
 			printf("Contents: ");
 			for (i = 0; i < it->first.size(); i++) {
@@ -258,7 +263,7 @@ int main(int argc, char **argv) {
 		// If dict length exceeds 512
 		u32 dlen = 0;
 		for (i = 0; i < numentries; i++)
-			dlen += entries[i].data.size();
+			dlen += entries[i].len;
 		if (dlen >= 512) {
 			puts("Dictionary length capped");
 			break;
@@ -269,15 +274,15 @@ int main(int argc, char **argv) {
 
 	u32 dlen = 0;
 	for (i = 0; i < numentries; i++)
-		dlen += entries[i].data.size();
+		dlen += entries[i].len;
 	printf("Dictionary has %u entries, %u total length.\n", numentries, dlen);
 
 	qsort(entries, numentries, sizeof(entry), lencmp);
 
 	u32 k;
 	for (i = 0; i < numentries; i++) {
-		printf("Entry %u: len %lu: ", i, entries[i].data.size());
-		for (k = 0; k < entries[i].data.size(); k++)
+		printf("Entry %u: len %u: ", i, entries[i].len);
+		for (k = 0; k < entries[i].len; k++)
 			printf("%u,", entries[i].data[k]);
 		puts("");
 	}
@@ -289,12 +294,12 @@ int main(int argc, char **argv) {
 	u32 compsize = 0;
 	for (i = 0; i < len;) {
 		for (k = 0; k < numentries; k++) {
-			if (i + entries[k].data.size() > len)
+			if (i + entries[k].len > len)
 				continue;
-			if (!memcmp(&mem[i], &entries[k].data[0], entries[k].data.size())) {
+			if (!memcmp(&mem[i], &entries[k].data[0], entries[k].len)) {
 				compsize++;
 				*out++ = k;
-				i += entries[k].data.size();
+				i += entries[k].len;
 				goto next;
 			}
 		}
@@ -315,7 +320,7 @@ int main(int argc, char **argv) {
 
 	while (out - testbuf < len) {
 		const u8 i = *in++;
-		const u16 dlen = entries[i].data.size();
+		const u16 dlen = entries[i].len;
 		memcpy(out, &entries[i].data[0], dlen);
 		out += dlen;
 	}
