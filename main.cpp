@@ -25,7 +25,7 @@ public:
 	void add(const u16 addr, const u8 len) {
 		u16 i;
 		const u16 curmax = num[len - 2];
-		const u8 hashed = hash(addr, len);
+		const u16 hashed = hash(addr, len);
 		for (i = hashmap[hashed]; i < MAXSIZE; i = hashnext[i]) {
 			if (!memcmp(&mem[addr], &mem[entries[len - 2][i].addr], len)) {
 				// Found it, just add one
@@ -117,10 +117,10 @@ private:
 	// Hashes and running numbers are only used while adding, during one len
 	u16 entrynum[MAXSIZE];
 	u16 hashnext[MAXSIZE];
-	u16 hashmap[256];
+	u16 hashmap[4096];
 
-	u8 hash(const u16 addr, const u8 len) const {
-		return XXH3_64bits(&mem[addr], len);
+	u16 hash(const u16 addr, const u8 len) const {
+		return XXH3_64bits(&mem[addr], len) & 4095;
 	}
 };
 
