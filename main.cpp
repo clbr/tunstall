@@ -60,13 +60,15 @@ public:
 		return num[len - 2];
 	}
 
-	const u8 *best(const u8 len, u16 &outbestnum) const {
-		outbestnum = largestnum[len - 2];
+	const u16 bestnum(const u8 len) const {
+		return largestnum[len - 2];
+	}
 
+	const u8 *best(const u8 len) const {
 /*		u16 i, opts = 0;
 		const u16 curmax = num[len - 2];
 		for (i = 0; i < curmax; i++) {
-			if (entries[len - 2][i].num != outbestnum)
+			if (entries[len - 2][i].num != largestnum[len - 2])
 				continue;
 			opts++;
 		}
@@ -204,8 +206,7 @@ int main(int argc, char **argv) {
 
 		printf("Length %u had %u unique matches\n", i, pc->size(i));
 
-		u16 max = 0;
-		pc->best(i, max);
+		const u16 max = pc->bestnum(i);
 		printf("Largest amount was %u\n", max);
 		maxes[i] = max;
 
@@ -232,8 +233,7 @@ int main(int argc, char **argv) {
 
 	u32 numentries = used + 1;
 
-	u16 unused;
-	const u8 *ptr = pc->best(best, unused);
+	const u8 *ptr = pc->best(best);
 	memcpy(entries[used].data, ptr, best);
 	entries[used].len = best;
 
@@ -280,8 +280,7 @@ int main(int argc, char **argv) {
 			}
 			pc->clearhash();
 
-			u16 max = 0;
-			pc->best(i, max);
+			const u16 max = pc->bestnum(i);
 			printf("Length %u had %u unique matches, max %u\n", i,
 				pc->size(i), max);
 
@@ -312,7 +311,7 @@ int main(int argc, char **argv) {
 			break;
 
 		// Found a new best
-		ptr = pc->best(best, unused);
+		ptr = pc->best(best);
 		memcpy(entries[numentries].data, ptr, best);
 		entries[numentries].len = best;
 		numentries++;
