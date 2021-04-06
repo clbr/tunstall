@@ -137,6 +137,13 @@ static int lencmp(const void *ap, const void *bp) {
 		return -1;
 	if (a->len < b->len)
 		return 1;
+
+	// Secondary sort on the first byte value
+	if (a->data[0] < b->data[0])
+		return -1;
+	if (a->data[0] > b->data[0])
+		return 1;
+
 	return 0;
 }
 
