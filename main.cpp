@@ -460,8 +460,19 @@ int main(int argc, char **argv) {
 
 		// Dict
 		for (i = 0; i < numentries; i++) {
+			if (entries[i].len == 1)
+				break;
 			fwrite(entries[i].data, entries[i].len, 1, f);
 		}
+
+		// Ones as a bitmap
+		const u8 numbytes = (numentries - i) / 8 + ((numentries - i) % 8 ? 1 : 0);
+		u8 bytes[32] = { 0 };
+		for (; i < numentries; i++) {
+			bytes[i / 8] |= 1 << (i % 8);
+		}
+
+		fwrite(bytes, numbytes, 1, f);
 
 		// Stream
 		fwrite(compressed, compsize, 1, f);
