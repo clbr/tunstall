@@ -314,6 +314,15 @@ int main(int argc, char **argv) {
 		if (!best) // Found nothing
 			break;
 
+		// If dict length exceeds 512
+		u32 dlen = 0;
+		for (i = 0; i < numentries; i++)
+			dlen += entries[i].len;
+		if (dlen + best > 512) {
+			puts("Dictionary length capped");
+			break;
+		}
+
 		// Found a new best
 		ptr = pc->best(best);
 		memcpy(entries[numentries].data, ptr, best);
@@ -349,15 +358,6 @@ int main(int argc, char **argv) {
 		// If longest open streak is 1
 		if (lastlevel == 1) {
 			puts("No more runs to find");
-			break;
-		}
-
-		// If dict length exceeds 512
-		u32 dlen = 0;
-		for (i = 0; i < numentries; i++)
-			dlen += entries[i].len;
-		if (dlen >= 512) {
-			puts("Dictionary length capped");
 			break;
 		}
 	}
