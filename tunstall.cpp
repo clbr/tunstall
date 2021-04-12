@@ -53,7 +53,7 @@ public:
 		return num[len - 2];
 	}
 
-	const u16 bestnum(const u8 len) const {
+	u16 bestnum(const u8 len) const {
 		return largestnum[len - 2];
 	}
 
@@ -246,7 +246,7 @@ u16 tunstall_comp(const u8 *in, u8 *out, const u16 len) {
 			printf("Iterating. %u entries found, %u/%u bytes\n",
 				numentries, erased, len);
 
-		memset(maxes, 0, 129);
+		memset(maxes, 0, 129 * sizeof(u32));
 		pc->clear();
 
 		for (i = 2; i <= lastlevel; i++) {
