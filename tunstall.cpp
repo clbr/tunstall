@@ -435,6 +435,8 @@ u16 tunstall_comp(const u8 *in, u8 *out, const u16 len) {
 	if (verbose)
 		printf("Compressed stream size %u\n", compsize);
 
+	delete pc;
+
 	return out - origout;
 }
 
