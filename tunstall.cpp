@@ -402,13 +402,15 @@ u16 tunstall_comp(const u8 *in, u8 *out, const u16 len) {
 	}
 
 	// Ones as a bitmap
+	const u8 bytebase = i / 8;
 	const u8 numbytes = (numentries - i) / 8 + ((numentries - i) % 8 ? 1 : 0);
 	memset(bytes, 0, 32);
 	for (; i < numentries; i++) {
-		bytes[i / 8] |= 1 << (i % 8);
+		const u8 x = entries[i].data[0];
+		bytes[x / 8] |= 1 << (x % 8);
 	}
 
-	memcpy(out, bytes, numbytes);
+	memcpy(out, bytes + bytebase, numbytes);
 	out += numbytes;
 
 	// Stream

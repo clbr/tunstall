@@ -19,6 +19,7 @@ void tunstall_decomp(const u8 *in, u8 *out, const u16 outlen) {
 	u8 cur = 0;
 	u16 i;
 	u8 nonones;
+	u8 ones;
 
 	while (1) {
 		const u8 num = *in++;
@@ -29,10 +30,10 @@ void tunstall_decomp(const u8 *in, u8 *out, const u16 outlen) {
 
 		// 1 is omitted if obvious
 		if (len == 2) {
-			const u8 onenum = *in++;
-			memset(&lens[cur], 1, onenum);
+			ones = *in++;
+			memset(&lens[cur], 1, ones);
 
-			nonones = numentries - onenum;
+			nonones = numentries - ones;
 			break;
 		}
 	}
@@ -49,4 +50,30 @@ void tunstall_decomp(const u8 *in, u8 *out, const u16 outlen) {
 	// Read dict
 	memcpy(dict, in, nononecum);
 	in += nononecum;
+
+	// Ones as a bitmap
+	const u8 bytebase = nonones / 8;
+	const u8 numbytes = ones / 8 + (ones % 8 ? 1 : 0);
+	u16 dictpos = nononecum;
+	for (i = 0; i < numbytes; i++) {
+		const u8 byte = *in++;
+		if (!byte)
+			continue;
+		u8 bit;
+		for (bit = 0; bit < 8; bit++) {
+			if (byte & (1 << bit)) {
+				dict[dictpos++] = (i + bytebase) * 8 + bit;
+			}
+		}
+	}
+
+	// Unpack stream
+	do {
+		cur = *in++;
+		const u8 len = lens[cur];
+		memcpy(out, &dict[starts[cur]], len);
+		out += len;
+	} while (out - origout < outlen);
+
+	if (out - origout != outlen) abort();
 }
