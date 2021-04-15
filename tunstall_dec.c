@@ -52,21 +52,22 @@ void tunstall_decomp(const u8 *in, u8 *out, const u16 outlen) {
 	in += nononecum;
 
 	// Ones as a bitmap
-	const u8 bytebase = nonones / 8;
-	const u8 numbytes = ones / 8 + (ones % 8 ? 1 : 0);
 	u16 dictpos = nononecum;
-	for (i = 0; i < numbytes; i++) {
+	for (i = 0; i < 32; i++) {
 		const u8 byte = *in++;
 		if (!byte)
 			continue;
 		u8 bit;
 		for (bit = 0; bit < 8; bit++) {
 			if (byte & (1 << bit)) {
-				dict[dictpos++] = (i + bytebase) * 8 + bit;
+				dict[dictpos++] = i * 8 + bit;
 			}
 		}
 	}
-
+/*
+	for (i = 0; i < numentries; i++)
+		printf("%u: len %u: first %u\n", i, lens[i], dict[starts[i]]);
+*/
 	// Unpack stream
 	do {
 		cur = *in++;
