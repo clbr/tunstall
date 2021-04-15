@@ -173,6 +173,8 @@ u16 tunstall_comp(const u8 *in, u8 *out, const u16 len) {
 	}
 	if (verbose)
 		printf("%u values used\n", used);
+	if (used == 256)
+		return USHRT_MAX;
 
 	for (i = 2; i <= 128; i++) {
 		u32 p;
