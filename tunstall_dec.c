@@ -28,15 +28,18 @@ void tunstall_decomp(const u8 *in, u8 *out, const u16 outlen) {
 		memset(&lens[cur], len, num);
 		cur += num;
 
+		if (len == 1) {
+			ones = num;
+			break;
+		}
 		// 1 is omitted if obvious
 		if (len == 2) {
 			ones = *in++;
 			memset(&lens[cur], 1, ones);
-
-			nonones = numentries - ones;
 			break;
 		}
 	}
+	nonones = numentries - ones;
 
 	// Fill in starts array
 	u16 cum = 0, nononecum = 0;
