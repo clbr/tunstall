@@ -439,7 +439,3 @@ u16 tunstall_comp(const u8 *in, u8 *out, const u16 len) {
 
 	return out - origout;
 }
-
-void tunstall_decomp(const u8 *in, u8 *out, const u16 outlen) {
-}
-
