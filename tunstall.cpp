@@ -120,7 +120,7 @@ private:
 };
 
 struct entry {
-	char data[128];
+	u8 data[128];
 	u8 len;
 };
 
