@@ -1,7 +1,7 @@
 CXXFLAGS += -Wall -Wextra -g
 LDFLAGS += -Wl,-O1
 
-NAME = pieceana
+NAME = tunstall
 SRC = $(wildcard *.cpp *.c)
 
 .PHONY: all clean
