@@ -412,14 +412,14 @@ u16 tunstall_comp(const u8 *in, u8 *out, const u16 len) {
 	out += 32;
 
 	// Stream
-	u32 compsize = 0;
+	u32 greedysize = 0;
 	for (i = 0; i < len;) {
 		for (k = 0; k < numentries; k++) {
 			if (i + entries[k].len > len)
 				continue;
 			if (!memcmp(&in[i], &entries[k].data[0], entries[k].len)) {
-				compsize++;
-				*out++ = k;
+				greedysize++;
+				//*out++ = k;
 				i += entries[k].len;
 				goto next;
 			}
@@ -435,7 +435,83 @@ u16 tunstall_comp(const u8 *in, u8 *out, const u16 len) {
 		abort();
 
 	if (verbose)
-		printf("Compressed stream size %u\n", compsize);
+		printf("Greedy stream size %u\n", greedysize);
+
+	// Perfect stream
+	u8 perflen[MAXSIZE] = { 0 };
+	u8 perfmatch[MAXSIZE] = { 0 };
+	u16 hops[MAXSIZE] = { 0 };
+
+	for (i = len - 1; i < len; i--) {
+		u8 numhits = 0;
+		u8 hitlen[256] = { 0 };
+		u8 hitmatch[256] = { 0 };
+
+		for (k = 0; k < numentries; k++) {
+			if (i + entries[k].len > len)
+				continue;
+			if (!memcmp(&in[i], &entries[k].data[0], entries[k].len)) {
+				hitmatch[numhits] = k;
+				hitlen[numhits] = entries[k].len;
+				numhits++;
+			}
+		}
+
+		// Pick the best one
+		if (verbose)
+			printf("At %u, %u hits\n", i, numhits);
+
+		if (!numhits)
+			abort();
+		if (numhits == 1) {
+			perflen[i] = hitlen[0];
+			perfmatch[i] = hitmatch[0];
+			if (i + hitlen[0] > len)
+				hops[i] = 1;
+			else
+				hops[i] = 1 + hops[i + hitlen[0]];
+		} else {
+			u8 best = 0;
+			u16 besthops = USHRT_MAX;
+
+			for (k = 0; k < numhits; k++) {
+				u16 curhops = 1;
+				if (i + hitlen[k] <= len)
+					curhops += hops[i + hitlen[k]];
+
+				if (verbose)
+					printf("\tChoice %u had %u hops, len %u\n",
+						k, curhops, hitlen[k]);
+
+				if (curhops < besthops) {
+					besthops = curhops;
+					best = k;
+				}
+			}
+
+			if (verbose)
+				printf("\tBest choice was %u hops\n", besthops);
+
+			perflen[i] = hitlen[best];
+			perfmatch[i] = hitmatch[best];
+			hops[i] = besthops;
+		}
+	}
+
+	u32 perfsize = 0;
+	for (i = 0; i < len;) {
+		k = perfmatch[i];
+		perfsize++;
+		*out++ = k;
+		i += entries[k].len;
+	}
+	if (i != len)
+		abort();
+
+	if (verbose)
+		printf("Perfect stream size %u, saved %u bytes/%.2f%%\n",
+			perfsize, greedysize - perfsize,
+			100 - perfsize * 100.0f / greedysize);
 
 	delete pc;
 
